@@ -2,6 +2,7 @@
 import com.mysql.jdbc.Connection;
 
 import javax.swing.*;
+import javax.swing.plaf.SeparatorUI;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.sql.*;
@@ -111,8 +112,13 @@ public class SQLDatabase extends JFrame {
 
 
     public void print(String name, String email, String website, String comment) {
-        textArea.setText(
-                "Name: "+name+ "\n"+ "Email: "+email+ "\n"+ "Website: "+website+ "\n"+ "Comment: "+comment
+        textArea.append(
+                "----------------------------------\n"+
+                                "Name: "+name+
+                        "\n"+ "Email: " + ""+email+
+                        "\n"+ "Website: " + ""+website+
+                        "\n"+ "Comment: " + ""+comment+"\n"+
+                "-----------------------------------"
         );
     }
 }
