@@ -175,9 +175,6 @@ class SQLConnection extends Thread{
         return url;
     }
 
-    public boolean getCensorship(){
-        return censorship;
-    }
 
     public void setCensored(){
         censorship = true;
