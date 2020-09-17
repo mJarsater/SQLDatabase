@@ -2,10 +2,10 @@
 import com.mysql.jdbc.Connection;
 
 import javax.swing.*;
-import javax.swing.plaf.SeparatorUI;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import java.awt.*;
 import java.sql.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class SQLDatabase extends JFrame {
     private JFrame jFrame;
@@ -31,8 +31,9 @@ public class SQLDatabase extends JFrame {
         websiteLabel = new JLabel("Website: ");
         commentLabel = new JLabel("Comment: ");
         textArea = new JTextArea();
-        scrollPane = new JScrollPane(textArea);
-        textArea.setEditable(false);
+        scrollPane = new JScrollPane();
+        scrollPane.setViewportView(textArea);
+        scrollPane.setPreferredSize(new Dimension(300,400));
         nameField = new JTextField();
         emailField = new JTextField();
         websiteField = new JTextField();
@@ -51,7 +52,7 @@ public class SQLDatabase extends JFrame {
         addCommentBtn.setEnabled(false);
         connectBtn.setBounds(200, 60, 100, 20);
         textArea.setBounds(20, 100, 340, 320);
-
+        String addText = " Added to guestbook";
         String select = "SELECT * FROM Guestbook";
         String entry = " INSERT INTO Guestbook (name, email, website, comment) " + "VALUES (?,?,?,?)";
 
@@ -60,8 +61,21 @@ public class SQLDatabase extends JFrame {
 
         this.add(addCommentBtn);
         addCommentBtn.addActionListener(e -> {
-            textArea.setText("Clicked add comment");
             getTextField();
+            if(!connection.checkText(name)){
+                name = "Censur";
+                connection.setCensored();
+            } if(!connection.checkText(email)){
+                email = "Censur";
+                connection.setCensored();
+            } if(!connection.checkText(website)){
+                website = "Censur";
+                connection.setCensored();
+            } if(!connection.checkText(comment)){
+                comment = "Censur";
+                connection.setCensored();// set false;
+            }
+
             connection.writeToDb(entry, name, email, website, comment);
         });
 
@@ -111,27 +125,44 @@ public class SQLDatabase extends JFrame {
     }
 
 
-    public void print(String name, String email, String website, String comment) {
-        textArea.append(
-                "----------------------------------\n"+
-                                "Name: "+name+
-                        "\n"+ "Email: " + ""+email+
-                        "\n"+ "Website: " + ""+website+
-                        "\n"+ "Comment: " + ""+comment+"\n"+
-                "-----------------------------------"
-        );
+    public void print(String text){
+        scrollPane.getViewport().revalidate();
+        textArea.append(text + "\n");
+    }
+
+    public void removeText(){
+        synchronized (textArea){
+            textArea.setText("");
+        }
+    }
+
+    public void logSuccess(String addText){
+        print(addText+"\n \n \n");
+    }
+
+    public void logToTextarea(String name, String email, String website, String comment) {
+
+        print("-----------------------------------");
+        print("Name: "+name);
+        print("Email: "+email);
+        print("Website: " +website);
+        print("Comment: " +comment);
+        print("-----------------------------------");
+
     }
 }
 
 class SQLConnection extends Thread{
     private SQLDatabase sqlDatabase;
     private boolean connected = false;
+    private boolean censorship = false;
     private String url = "jdbc:mysql://atlas.dsv.su.se:3306/db_20947219";
     private String username = "usr_20947219";
     private String password = "947219";
     private PreparedStatement prepStatement;
     private Statement statement;
     private Connection dbConnection;
+    private Pattern htmlPattern = Pattern.compile("<(\"[^\"]*\"|'[^']*'|[^'\">])*>"+"<*>");
 
 
     public SQLConnection(SQLDatabase sqlDatabase){
@@ -144,11 +175,24 @@ class SQLConnection extends Thread{
         return url;
     }
 
-    public boolean isConnected(){
-        return connected;
+    public boolean getCensorship(){
+        return censorship;
+    }
+
+    public void setCensored(){
+        censorship = true;
+    }
+
+    public String getAddText(){
+        if(censorship = true){
+            return "Added to guestbook - But some got censored. No html plsss...";
+        } else{
+            return "Added to guestbook";
+        }
     }
 
     public void writeToDb(String entry,String name,String email,String website,String comment) {
+        String select = "SELECT * FROM Guestbook";
         try {
             prepStatement = dbConnection.prepareStatement(entry);
             prepStatement.setString(1,name);
@@ -156,17 +200,26 @@ class SQLConnection extends Thread{
             prepStatement.setString(3,website);
             prepStatement.setString(4,comment);
             prepStatement.execute();
+            sqlDatabase.logSuccess(getAddText());
+            readFromDb(select);
         } catch (SQLException sqlException){
             System.out.println(sqlException);
         }
     }
 
+    public synchronized boolean checkText(String string){
+        Matcher matcher = htmlPattern.matcher(string);
+        return matcher.find();
+    }
+
+
+
     public synchronized void readFromDb(String select){
         String name, email, website, comment;
-
-        try{
-        statement = dbConnection.createStatement();
-        ResultSet result = statement.executeQuery(select);
+        sqlDatabase.removeText();
+        try {
+            statement = dbConnection.createStatement();
+            ResultSet result = statement.executeQuery(select);
 
         while(result.next()){
             //Retrieve
@@ -175,12 +228,8 @@ class SQLConnection extends Thread{
             website = result.getString("website");
             comment = result.getString("comment");
 
-            sqlDatabase.print(name, email, website, comment);
+            sqlDatabase.logToTextarea(name, email, website, comment);
 
-            System.out.println("Name: "+name);
-            System.out.println("Email:" +email);
-            System.out.println("Website: "+website);
-            System.out.println("Comment: "+comment);
         }
     } catch (SQLException sqle){
             System.out.println(sqle);
