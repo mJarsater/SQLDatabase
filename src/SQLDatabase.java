@@ -67,16 +67,16 @@ public class SQLDatabase extends JFrame {
         this.add(addCommentBtn);
         addCommentBtn.addActionListener(e -> {
             getTextField();
-            if(!connection.checkText(name)){
+            if(connection.checkText(name)){
                 name = "Censur";
                 connection.setCensored();
-            } if(!connection.checkText(email)){
+            } if(connection.checkText(email)){
                 email = "Censur";
                 connection.setCensored();
-            } if(!connection.checkText(website)){
+            } if(connection.checkText(website)){
                 website = "Censur";
                 connection.setCensored();
-            } if(!connection.checkText(comment)){
+            } if(connection.checkText(comment)){
                 comment = "Censur";
                 connection.setCensored();// set false;
             }
@@ -142,7 +142,7 @@ public class SQLDatabase extends JFrame {
         }
     }
 
-    public void getTextField() {
+    public synchronized void getTextField() {
         name = nameField.getText();
         email = emailField.getText();
         website = websiteField.getText();
@@ -210,7 +210,6 @@ public class SQLDatabase extends JFrame {
 
     public void logToTextarea(String name, String email, String website, String comment) {
 
-        print("-----------------------------------");
         print("Name: "+name);
         print("Email: "+email);
         print("Website: " +website);
@@ -238,7 +237,7 @@ class SQLConnection extends Thread{
     private PreparedStatement prepStatement;
     private Statement statement;
     private Connection dbConnection;
-    private Pattern htmlPattern = Pattern.compile("<(\"[^\"]*\"|'[^']*'|[^'\">])*>"+"<*>");
+    private Pattern htmlPattern = Pattern.compile("<*>");
 
 
     public SQLConnection(SQLDatabase sqlDatabase, String username, String password){
