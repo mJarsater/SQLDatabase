@@ -1,6 +1,5 @@
 
 import com.mysql.jdbc.Connection;
-
 import javax.swing.*;
 import java.awt.*;
 import java.sql.*;
@@ -14,10 +13,10 @@ public class SQLDatabase extends JFrame {
     private JTextArea textArea;
     private JScrollPane scrollPane;
     private JLabel nameLabel, emailLabel, websiteLabel, commentLabel;
-    private JTextField nameField, emailField, websiteField, commentField;
+    private JTextField nameField, emailField, websiteField, commentField, usernameField, passwordField;
     private JButton addCommentBtn, refreshBtn, connectBtn;
     private String name, email, website, comment;
-    private String toggleConnect = "Connect";
+
 
     public SQLDatabase() {
         this.database = this;
@@ -26,10 +25,10 @@ public class SQLDatabase extends JFrame {
         connectBtn = new JButton("Connect");
         addCommentBtn = new JButton("Add comment");
         refreshBtn = new JButton("Refresh");
-        nameLabel = new JLabel("Name: ");
-        emailLabel = new JLabel("Email: ");
-        websiteLabel = new JLabel("Website: ");
-        commentLabel = new JLabel("Comment: ");
+        nameLabel = new JLabel("Name - ");
+        emailLabel = new JLabel("Email - ");
+        websiteLabel = new JLabel("Website - ");
+        commentLabel = new JLabel("Comment - ");
         textArea = new JTextArea();
         scrollPane = new JScrollPane();
         scrollPane.setViewportView(textArea);
@@ -38,21 +37,29 @@ public class SQLDatabase extends JFrame {
         emailField = new JTextField();
         websiteField = new JTextField();
         commentField = new JTextField();
+        usernameField = new JTextField();
+        passwordField = new JTextField();
         nameLabel.setBounds(10, 0, 70, 20);
         nameField.setBounds(80, 0, 100, 20);
+        nameField.setEnabled(false);
         emailLabel.setBounds(10, 20, 70, 20);
         emailField.setBounds(80, 20, 100, 20);
+        emailField.setEnabled(false);
         websiteLabel.setBounds(10, 40, 70, 20);
         websiteField.setBounds(80, 40, 100, 20);
+        websiteField.setEnabled(false);
         commentLabel.setBounds(10, 60, 70, 20);
         commentField.setBounds(80, 60, 100, 20);
+        commentField.setEnabled(false);
         refreshBtn.setBounds(200, 10, 100, 20);
         refreshBtn.setEnabled(false);
         addCommentBtn.setBounds(200, 35, 100, 20);
         addCommentBtn.setEnabled(false);
-        connectBtn.setBounds(200, 60, 100, 20);
         textArea.setBounds(20, 100, 340, 320);
-        String addText = " Added to guestbook";
+
+        connectBtn.setBounds(400, 160, 100, 20);
+        usernameField.setBounds(400, 100, 100, 20);
+        passwordField.setBounds(400, 130, 100, 20);
         String select = "SELECT * FROM Guestbook";
         String entry = " INSERT INTO Guestbook (name, email, website, comment) " + "VALUES (?,?,?,?)";
 
@@ -80,17 +87,28 @@ public class SQLDatabase extends JFrame {
         });
 
 
+
         this.add(refreshBtn);
         refreshBtn.addActionListener(e -> connection.readFromDb(select));
 
         this.add(connectBtn);
         connectBtn.addActionListener(e -> {
-            connection = new SQLConnection(database);
+
+            if(connectBtn.getText().equals("Connect")){
+            String username = getUsername();
+            String password = getPassword();
+
+
+            connection = new SQLConnection(database, username, password);
             connection.start();
             jFrame.setTitle("Connected to server @" +connection.getUrl());
-            connectBtn.setText("Disconnect");
+            toggleConnect();
+            enableComment();
             refreshBtn.setEnabled(true);
             addCommentBtn.setEnabled(true);
+            } else {
+               connection.killConnection();
+            }
         });
         // ------------ BUTTONS END -----------------------
 
@@ -103,12 +121,20 @@ public class SQLDatabase extends JFrame {
         this.add(emailField);
         this.add(websiteField);
         this.add(commentField);
-
-
-        this.setSize(400, 500);//400 width and 500 height
+        this.add(usernameField);
+        this.add(passwordField);
+        this.setSize(550, 500);//400 width and 500 height
         this.setLayout(null);//using no layout managers
         this.setVisible(true);//making the frame visible
 
+    }
+
+    public void toggleConnect(){
+        if(connectBtn.getText().equals("Connect")){
+            connectBtn.setText("Disconnect");
+        } else if(connectBtn.getText().equals("Disconnect")){
+            connectBtn.setText("Connect");
+        }
     }
 
     public void getTextField() {
@@ -118,12 +144,35 @@ public class SQLDatabase extends JFrame {
         comment = commentField.getText();
     }
 
+    public void enableComment(){
+        nameField.setEnabled(true);
+        emailField.setEnabled(true);
+        websiteField.setEnabled(true);
+        commentField.setEnabled(true);
+    }
+
+    public void disableComment(){
+        nameField.setEnabled(false);
+        emailField.setEnabled(false);
+        websiteField.setEnabled(false);
+        commentField.setEnabled(false);
+        addCommentBtn.setEnabled(false);
+        refreshBtn.setEnabled(false);
+    }
+
     public static void main(String[] args) {
         SQLDatabase f = new SQLDatabase();
 
 
     }
 
+    public String getUsername(){
+        return usernameField.getText();
+    }
+
+    public String getPassword(){
+        return passwordField.getText();
+    }
 
     public void print(String text){
         scrollPane.getViewport().revalidate();
@@ -134,6 +183,20 @@ public class SQLDatabase extends JFrame {
         synchronized (textArea){
             textArea.setText("");
         }
+    }
+
+    public void logConnection(){
+        print("------- Connection established -------");
+    }
+
+    public void disableConnectionInput(){
+        usernameField.setEnabled(false);
+        passwordField.setEnabled(false);
+    }
+
+    public void logNoConnection(){
+     print("------- No connection -------");
+     print("Wrong username/password");
     }
 
     public void logSuccess(String addText){
@@ -150,6 +213,14 @@ public class SQLDatabase extends JFrame {
         print("-----------------------------------");
 
     }
+
+    public synchronized void diconnect(){
+        usernameField.setEnabled(true);
+        passwordField.setEnabled(true);
+        disableComment();
+        toggleConnect();
+        removeText();
+    }
 }
 
 class SQLConnection extends Thread{
@@ -157,24 +228,23 @@ class SQLConnection extends Thread{
     private boolean connected = false;
     private boolean censorship = false;
     private String url = "jdbc:mysql://atlas.dsv.su.se:3306/db_20947219";
-    private String username = "usr_20947219";
-    private String password = "947219";
+    private String username;
+    private String password;
     private PreparedStatement prepStatement;
     private Statement statement;
     private Connection dbConnection;
     private Pattern htmlPattern = Pattern.compile("<(\"[^\"]*\"|'[^']*'|[^'\">])*>"+"<*>");
 
 
-    public SQLConnection(SQLDatabase sqlDatabase){
+    public SQLConnection(SQLDatabase sqlDatabase, String username, String password){
         this.sqlDatabase = sqlDatabase;
-
-
+        this.username = username;
+        this.password = password;
     }
 
     public String getUrl(){
         return url;
     }
-
 
     public void setCensored(){
         censorship = true;
@@ -210,7 +280,6 @@ class SQLConnection extends Thread{
     }
 
 
-
     public synchronized void readFromDb(String select){
         String name, email, website, comment;
         sqlDatabase.removeText();
@@ -233,6 +302,10 @@ class SQLConnection extends Thread{
         }
     }
 
+    public void setConnection(){
+        sqlDatabase.logConnection();
+        sqlDatabase.disableConnectionInput();
+    }
 
 
     public void run(){
@@ -241,14 +314,26 @@ class SQLConnection extends Thread{
             dbConnection = (Connection) DriverManager.getConnection(
                     url,username,password);
             connected = true;
-            System.out.println("Connection successfull!");
+            setConnection();
         } catch(SQLException | ClassNotFoundException e){
             System.out.println(e);
+            sqlDatabase.logNoConnection();
+
         } catch (IllegalAccessException e) {
             e.printStackTrace();
+
         } catch (InstantiationException e) {
             e.printStackTrace();
         }
     }
 
+    public void killConnection()  {
+        try{
+        dbConnection.close();
+        sqlDatabase.diconnect();
+        sqlDatabase.print("Disconnected");
+    } catch (SQLException sqlE){
+            sqlDatabase.print("ERROR: Could not disconnect");
+        }
+    }
 }
