@@ -12,7 +12,7 @@ public class SQLDatabase extends JFrame {
     private SQLConnection connection;
     private JTextArea textArea;
     private JScrollPane scrollPane;
-    private JLabel nameLabel, emailLabel, websiteLabel, commentLabel;
+    private JLabel nameLabel, emailLabel, websiteLabel, commentLabel, usernameLabel, passwordLabel;
     private JTextField nameField, emailField, websiteField, commentField, usernameField, passwordField;
     private JButton addCommentBtn, refreshBtn, connectBtn;
     private String name, email, website, comment;
@@ -30,13 +30,16 @@ public class SQLDatabase extends JFrame {
         websiteLabel = new JLabel("Website - ");
         commentLabel = new JLabel("Comment - ");
         textArea = new JTextArea();
+        textArea.setEditable(false);
         scrollPane = new JScrollPane(textArea);
         scrollPane.setPreferredSize(new Dimension(300,400));
         nameField = new JTextField();
         emailField = new JTextField();
         websiteField = new JTextField();
         commentField = new JTextField();
+        usernameLabel = new JLabel("Username:");
         usernameField = new JTextField();
+        passwordLabel = new JLabel("Password:");
         passwordField = new JTextField();
         nameLabel.setBounds(10, 0, 70, 20);
         nameField.setBounds(80, 0, 100, 20);
@@ -50,14 +53,17 @@ public class SQLDatabase extends JFrame {
         commentLabel.setBounds(10, 60, 70, 20);
         commentField.setBounds(80, 60, 100, 20);
         commentField.setEnabled(false);
-        refreshBtn.setBounds(200, 10, 100, 20);
+        refreshBtn.setBounds(200, 10, 150, 20);
         refreshBtn.setEnabled(false);
-        addCommentBtn.setBounds(200, 35, 100, 20);
+        addCommentBtn.setBounds(200, 35, 150, 20);
         addCommentBtn.setEnabled(false);
         scrollPane.setBounds(20, 100, 340, 320);
-        connectBtn.setBounds(400, 160, 100, 20);
+        usernameLabel.setBounds(400,80,100,20);
         usernameField.setBounds(400, 100, 100, 20);
-        passwordField.setBounds(400, 130, 100, 20);
+        passwordLabel.setBounds(400,130,100,20);
+        passwordField.setBounds(400, 150, 100, 20);
+        connectBtn.setBounds(400, 180, 100, 20);
+
         String select = "SELECT * FROM Guestbook";
         String entry = " INSERT INTO Guestbook (name, email, website, comment) " + "VALUES (?,?,?,?)";
 
@@ -126,7 +132,9 @@ public class SQLDatabase extends JFrame {
         this.add(emailField);
         this.add(websiteField);
         this.add(commentField);
+        this.add(usernameLabel);
         this.add(usernameField);
+        this.add(passwordLabel);
         this.add(passwordField);
         this.setSize(550, 500);//400 width and 500 height
         this.setLayout(null);//using no layout managers
