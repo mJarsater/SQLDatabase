@@ -30,8 +30,7 @@ public class SQLDatabase extends JFrame {
         websiteLabel = new JLabel("Website - ");
         commentLabel = new JLabel("Comment - ");
         textArea = new JTextArea();
-        scrollPane = new JScrollPane();
-        scrollPane.setViewportView(textArea);
+        scrollPane = new JScrollPane(textArea);
         scrollPane.setPreferredSize(new Dimension(300,400));
         nameField = new JTextField();
         emailField = new JTextField();
@@ -55,8 +54,7 @@ public class SQLDatabase extends JFrame {
         refreshBtn.setEnabled(false);
         addCommentBtn.setBounds(200, 35, 100, 20);
         addCommentBtn.setEnabled(false);
-        textArea.setBounds(20, 100, 340, 320);
-
+        scrollPane.setBounds(20, 100, 340, 320);
         connectBtn.setBounds(400, 160, 100, 20);
         usernameField.setBounds(400, 100, 100, 20);
         passwordField.setBounds(400, 130, 100, 20);
@@ -89,7 +87,14 @@ public class SQLDatabase extends JFrame {
 
 
         this.add(refreshBtn);
-        refreshBtn.addActionListener(e -> connection.readFromDb(select));
+        refreshBtn.addActionListener(e -> {
+
+            connection.readFromDb(select);
+            JScrollBar scroll = scrollPane.getVerticalScrollBar();
+            scroll.setValue(scroll.getMaximum());
+
+
+        });
 
         this.add(connectBtn);
         connectBtn.addActionListener(e -> {
@@ -112,7 +117,7 @@ public class SQLDatabase extends JFrame {
         });
         // ------------ BUTTONS END -----------------------
 
-        this.add(textArea);
+        this.add(scrollPane);
         this.add(nameLabel);
         this.add(emailLabel);
         this.add(websiteLabel);
