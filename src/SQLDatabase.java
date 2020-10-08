@@ -17,7 +17,7 @@ public class SQLDatabase extends JFrame {
     private JButton addCommentBtn, refreshBtn, connectBtn;
     private String name, email, website, comment;
 
-
+    //Konstruktor för SQLdatabase - GUI
     public SQLDatabase() {
         this.database = this;
         this.jFrame = this;
@@ -68,8 +68,8 @@ public class SQLDatabase extends JFrame {
         String entry = " INSERT INTO Guestbook (name, email, website, comment) " + "VALUES (?,?,?,?)";
 
         // -------------- BUTTONS ------------------------
-
-
+        /*Knapp för att lämna kommentar, som kollar all
+         text innan den skickar till databasen. */
         this.add(addCommentBtn);
         addCommentBtn.addActionListener(e -> {
             getTextField();
@@ -93,9 +93,13 @@ public class SQLDatabase extends JFrame {
 
 
         this.add(refreshBtn);
+        /* Knapp för att läsa från databasen*/
         refreshBtn.addActionListener(e -> {
-
+            /* Kallar på metoden readFromDb */
             connection.readFromDb(select);
+
+            /*  GUI - Skapar en scrollbar och sätter
+             autoscrollen till max (nyaste inläggen) */
             JScrollBar scroll = scrollPane.getVerticalScrollBar();
             scroll.setValue(scroll.getMaximum());
 
@@ -108,10 +112,12 @@ public class SQLDatabase extends JFrame {
             if(connectBtn.getText().equals("Connect")){
             String username = getUsername();
             String password = getPassword();
-
-
+            /* Skapar en ny SQLConnection och skickar med database (this),
+            avändarnamn och lösenord. */
             connection = new SQLConnection(database, username, password);
-            connection.start();
+
+            //"Startar" tråden connection.
+            connection.connectToDb();
             jFrame.setTitle("Connected to server @" +connection.getUrl());
             toggleConnect();
             enableComment();
@@ -139,9 +145,12 @@ public class SQLDatabase extends JFrame {
         this.setSize(550, 500);//400 width and 500 height
         this.setLayout(null);//using no layout managers
         this.setVisible(true);//making the frame visible
+        this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
 
     }
-
+    /* Metod som togglar innehållet på knappen
+    för connect / disconnect */
     public void toggleConnect(){
         if(connectBtn.getText().equals("Connect")){
             connectBtn.setText("Disconnect");
@@ -150,6 +159,8 @@ public class SQLDatabase extends JFrame {
         }
     }
 
+    /* Metod som häntar innehåller i alla
+    fälten för en kommentar*/
     public synchronized void getTextField() {
         name = nameField.getText();
         email = emailField.getText();
@@ -157,6 +168,8 @@ public class SQLDatabase extends JFrame {
         comment = commentField.getText();
     }
 
+    /*Metod som sätter fälten för kommentar
+    som "enabled"*/
     public void enableComment(){
         nameField.setEnabled(true);
         emailField.setEnabled(true);
@@ -164,6 +177,9 @@ public class SQLDatabase extends JFrame {
         commentField.setEnabled(true);
     }
 
+
+    /*Metod som sätter fälten för kommentar
+    som "disabled"*/
     public void disableComment(){
         nameField.setEnabled(false);
         emailField.setEnabled(false);
@@ -172,50 +188,65 @@ public class SQLDatabase extends JFrame {
         addCommentBtn.setEnabled(false);
         refreshBtn.setEnabled(false);
     }
-
+// ----------------- MAIN -------------------
     public static void main(String[] args) {
         SQLDatabase f = new SQLDatabase();
-
+// ----------------- MAIN END ---------------
 
     }
 
+    //Metod som returnerar användarnamn
     public String getUsername(){
         return usernameField.getText();
     }
-
+    //Metod som returnerar lösenord
     public String getPassword(){
         return passwordField.getText();
     }
-
+    //Metod som skriver på scrollpanen
     public void print(String text){
         scrollPane.getViewport().revalidate();
         textArea.append(text + "\n");
     }
-
+    //Metod som rensar scrollpanen på text
     public void removeText(){
         synchronized (textArea){
             textArea.setText("");
         }
     }
 
+    /*Metod som skriver ut :
+    ----------- Connection established --------
+    på scrollpanen
+    */
     public void logConnection(){
         print("------- Connection established -------");
     }
 
+    /*Metod som sätter användarnamn- och
+    lösenordsfältet som "disabled" */
     public void disableConnectionInput(){
         usernameField.setEnabled(false);
         passwordField.setEnabled(false);
     }
 
+    /*Metod som skriver ut :
+    ------- No connection -------
+    Wrong username/password
+    på scrollpanen
+    */
     public void logNoConnection(){
      print("------- No connection -------");
      print("Wrong username/password");
     }
 
+
+    /* Skriver ett successmeddelande till scrollpanen */
     public void logSuccess(String addText){
         print(addText+"\n \n \n");
     }
 
+    /* Skriver text + parametrarna till scrollpanen */
     public void logToTextarea(String name, String email, String website, String comment) {
 
         print("Name: "+name);
@@ -226,6 +257,7 @@ public class SQLDatabase extends JFrame {
 
     }
 
+    /*Metod för att avbryta en connection*/
     public synchronized void diconnect(){
         usernameField.setEnabled(true);
         passwordField.setEnabled(true);
@@ -235,7 +267,7 @@ public class SQLDatabase extends JFrame {
     }
 }
 
-class SQLConnection extends Thread{
+class SQLConnection {
     private SQLDatabase sqlDatabase;
     private boolean connected = false;
     private boolean censorship = false;
@@ -247,21 +279,23 @@ class SQLConnection extends Thread{
     private Connection dbConnection;
     private Pattern htmlPattern = Pattern.compile("<*>");
 
-
+    // Konstruktor för klasse SQLConnection
     public SQLConnection(SQLDatabase sqlDatabase, String username, String password){
         this.sqlDatabase = sqlDatabase;
         this.username = username;
         this.password = password;
     }
-
+    // Metod som returnerar strängen "url"
     public String getUrl(){
         return url;
     }
-
+    // Metod som sätter censorship till sant
     public void setCensored(){
         censorship = true;
     }
-
+    /* Metod som returnerar textens om ska skrivas
+    till scrollpanen när det görs ett nytt entry
+    i databasen */
     public String getAddText(){
         if(censorship = true){
             return "Added to guestbook - But some got censored. No html plsss...";
@@ -270,6 +304,8 @@ class SQLConnection extends Thread{
         }
     }
 
+    /* Metod som skriver paramtrarna till databasen
+     med ett prepared statement, samt kallar på readFromDb */
     public void writeToDb(String entry,String name,String email,String website,String comment) {
         String select = "SELECT * FROM Guestbook";
         try {
@@ -286,12 +322,14 @@ class SQLConnection extends Thread{
         }
     }
 
+
+    // Metod som kollar så att ingen html finns i texten
     public synchronized boolean checkText(String string){
         Matcher matcher = htmlPattern.matcher(string);
         return matcher.find();
     }
 
-
+    // Metod som läser från databasen
     public synchronized void readFromDb(String select){
         String name, email, website, comment;
         sqlDatabase.removeText();
@@ -314,13 +352,15 @@ class SQLConnection extends Thread{
         }
     }
 
+    /* Metod som loggar anslutningen till scrollpanen
+    samt disablear input för användarnamn och lösenord.*/
     public void setConnection(){
         sqlDatabase.logConnection();
         sqlDatabase.disableConnectionInput();
     }
 
-
-    public void run(){
+    // Metod som ansluter till databasen
+    public void connectToDb(){
         try{
             Class.forName("com.mysql.jdbc.Driver").newInstance();
             dbConnection = (Connection) DriverManager.getConnection(
@@ -338,12 +378,13 @@ class SQLConnection extends Thread{
             e.printStackTrace();
         }
     }
-
+    // Metoden som stänger anslutningen till databasen
     public void killConnection()  {
         try{
         dbConnection.close();
         sqlDatabase.diconnect();
         sqlDatabase.print("Disconnected");
+        sqlDatabase.setTitle("No connection");
     } catch (SQLException sqlE){
             sqlDatabase.print("ERROR: Could not disconnect");
         }
